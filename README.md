@@ -111,9 +111,10 @@ COTIN/
 ├── index.htm              # Archivo principal de la aplicación
 ├── manifest.json          # Manifiesto PWA
 ├── service-worker.js      # Service worker para funcionalidad offline
-├── stylesheet.css         # Estilos CSS
+├── stylesheet.css         # Estilos CSS (nota: existe duplicado como "stylesheet (1).css")
 ├── digital-7.ttf          # Fuente display LED
 ├── digital-7-mono.ttf     # Fuente display LED monoespaciada
+├── digital-7-webfont.*    # Fuente display LED en formatos web (woff, woff2)
 ├── LEDCalculator.ttf      # Fuente calculadora LED
 ├── icon-*.png             # Iconos de la aplicación (varios tamaños)
 └── screenshot-*.png       # Capturas de pantalla
