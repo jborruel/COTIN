@@ -111,13 +111,22 @@ COTIN/
 ├── index.htm              # Archivo principal de la aplicación
 ├── manifest.json          # Manifiesto PWA
 ├── service-worker.js      # Service worker para funcionalidad offline
-├── stylesheet.css         # Estilos CSS (nota: existe duplicado como "stylesheet (1).css")
+├── stylesheet.css         # Estilos CSS principal
+├── stylesheet (1).css     # Copia de estilos CSS (duplicado)
 ├── digital-7.ttf          # Fuente display LED
 ├── digital-7-mono.ttf     # Fuente display LED monoespaciada
-├── digital-7-webfont.*    # Fuente display LED en formatos web (woff, woff2)
+├── digital-7-webfont.woff # Fuente display LED formato web WOFF
+├── digital-7-webfont.woff2# Fuente display LED formato web WOFF2
 ├── LEDCalculator.ttf      # Fuente calculadora LED
-├── icon-*.png             # Iconos de la aplicación (varios tamaños)
-└── screenshot-*.png       # Capturas de pantalla
+├── icon-48x48.png         # Icono 48x48px
+├── icon-72x72.png         # Icono 72x72px
+├── icon-96x96.png         # Icono 96x96px
+├── icon-144x144.png       # Icono 144x144px
+├── icon-192x192.png       # Icono 192x192px
+├── icon-256x256.png       # Icono 256x256px
+├── icon-512x512.png       # Icono 512x512px
+├── screenshot-desktop.png # Captura de pantalla versión desktop
+└── screenshot-mobile.png  # Captura de pantalla versión mobile
 ```
 
 ### Funciones Principales
