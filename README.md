@@ -116,7 +116,7 @@ COTIN/
 ├── digital-7.ttf          # Fuente display LED
 ├── digital-7-mono.ttf     # Fuente display LED monoespaciada
 ├── digital-7-webfont.woff # Fuente display LED formato web WOFF
-├── digital-7-webfont.woff2# Fuente display LED formato web WOFF2
+├── digital-7-webfont.woff2 # Fuente display LED formato web WOFF2
 ├── LEDCalculator.ttf      # Fuente calculadora LED
 ├── icon-48x48.png         # Icono 48x48px
 ├── icon-72x72.png         # Icono 72x72px
