@@ -46,244 +46,507 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
     }
   </script>
   <style>
+
+  /* ============================================================
+     COTIN - Estilos reorganizados
+     ------------------------------------------------------------
+     Objetivo:
+     - Una sola definición base por clase.
+     - Variables de tamaño centralizadas.
+     - Media queries al final, de menor a mayor prioridad.
+     - Sin solapes incontrolados entre .etiqueta_tiempo, .reloj, etc.
+     ============================================================ */
+
+  /* ---------- Fuentes locales ---------- */
+  @font-face {
+    font-family: 'digital-7regular';
+    src: url('./digital-7-webfont.woff2') format('woff2'),
+         url('./digital-7-webfont.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+  }
+
+  @font-face {
+    font-family: 'LEDCalculator';
+    src: url('LEDCalculator.ttf') format('truetype');
+  }
+
+  @font-face {
+    font-family: 'digital-7-mono';
+    src: url('digital-7-mono.ttf') format('truetype');
+  }
+
+  /* ---------- Variables generales ---------- */
+  :root {
+    --panel-bg: lightgrey;
+    --cell-radius: clamp(4px, 0.7vmin, 9px);
+    --col-gap: 3px;
+    --row-gap-y: clamp(0.04rem, 0.35vh, 0.32rem);
+
+    /* Tamaños principales */
+    --fs-clock: clamp(1.45rem, 3.9vmin, 3.2rem);
+    --fs-team-label: clamp(1.3rem, 3.55vmin, 2.8rem);
+    --fs-row-label: clamp(1.1rem, 3.05vmin, 2.25rem);
+    --fs-config-label: clamp(0.9rem, 2.45vmin, 1.65rem);
+
+    /* Columna T0/T1/T2/T3: 00:20:00, 00:13:20... */
+    --fs-time-reference: clamp(2.25rem, min(7.8vh, 5.2vw), 5.4rem);
+
+    /* Cronómetros principales */
+    --fs-timer: clamp(2.7rem, min(8.6vh, 4.9vw), 6.4rem);
+
+    /* Presiones y entradas */
+    --fs-pressure: clamp(1.35rem, 3.85vmin, 3.05rem);
+    --fs-text-input: clamp(1.1rem, 3vmin, 2.2rem);
+    --fs-button: clamp(1.05rem, 2.9vmin, 2.1rem);
+
+    /* Alturas */
+    --timer-box-h: clamp(4.6rem, 14vh, 8.6rem);
+    --pressure-h: clamp(2.7rem, 8.2vh, 5.2rem);
+    --text-input-h: clamp(2.25rem, 6.4vh, 4.1rem);
+    --button-h: clamp(2.2rem, 5.9vh, 3.8rem);
+  }
+
+  /* ---------- Orientación obligatoria ---------- */
+  @media (orientation: portrait) {
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      text-align: center;
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .rotate-message {
+      display: block;
+    }
+
+    .app-content {
+      display: none;
+    }
+  }
+
+  @media (orientation: landscape) {
+    .rotate-message {
+      display: none;
+    }
+
+    .app-content {
+      display: flex !important;
+    }
+  }
+
+  /* ---------- Base de pantalla ---------- */
+  html,
+  body {
+    height: 100%;
+    min-height: 100%;
+    margin: 0;
+    overflow-x: hidden;
+    background-color: var(--panel-bg);
+  }
+
+  .app-content {
+    width: 100%;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    flex-direction: column;
+  }
+
+  .container-fluid {
+    flex: 1 1 auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    padding: clamp(0.12rem, 0.45vmin, 0.45rem) !important;
+  }
+
+  .container-fluid > .row {
+    flex: 1 1 0;
+    align-items: center;
+  }
+
+  .row {
+    margin-left: calc(-1 * var(--col-gap));
+    margin-right: calc(-1 * var(--col-gap));
+  }
+
+  .row > [class^="col-"],
+  .row > [class*=" col-"] {
+    padding-left: var(--col-gap);
+    padding-right: var(--col-gap);
+    min-width: 0;
+  }
+
+  .row.py-2 {
+    padding-top: var(--row-gap-y) !important;
+    padding-bottom: var(--row-gap-y) !important;
+  }
+
+  /* Reparto vertical del tablero */
+  .container-fluid > .row:nth-child(1) { flex-grow: 0.95; }
+  .container-fluid > .row:nth-child(2) { flex-grow: 2.15; align-items: stretch; }
+  .container-fluid > .row:nth-child(3),
+  .container-fluid > .row:nth-child(4) { flex-grow: 0.72; }
+  .container-fluid > .row:nth-child(n+5) { flex-grow: 1.08; }
+
+  /* Fila de cronómetros: columnas en vertical para caja + botones */
+  .container-fluid > .row:nth-child(2) > [class^="col-"],
+  .container-fluid > .row:nth-child(2) > [class*=" col-"] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* ---------- Elementos comunes ---------- */
+  .reloj,
+  .etiqueta,
+  .etiqueta_pq,
+  .etiqueta_pq2,
+  .etiqueta_tiempo,
+  .timer,
+  .timer2,
+  .inputpending,
+  .inputpending_pq,
+  .inputpresion,
+  .inputpresionoff,
+  .inputpresionoff3,
+  .pout-display,
+  .custom-select,
+  .btn-crono {
+    border-radius: var(--cell-radius);
+    line-height: 1.02;
+    box-sizing: border-box;
+  }
+
+  /* ---------- Reloj negro superior y relojes de marcas reales ---------- */
+  .reloj {
+    font-family: 'digital-7-mono';
+    font-size: var(--fs-clock);
+    background-color: black;
+    color: white;
+    padding: 0.18em 0.35em;
+    text-align: center;
+    justify-content: center !important;
+    align-items: center !important;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+
+  /* ---------- Etiquetas ---------- */
+  .etiqueta {
+    font-family: 'Orbitron';
+    font-size: var(--fs-team-label);
+    text-align: center;
+    background-color: grey;
+    color: white;
+    padding: 0.08em 0.25em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .etiqueta_pq {
+    font-family: 'Orbitron';
+    font-size: var(--fs-row-label);
+    text-align: center;
+    background-color: grey;
+    color: white;
+    padding: 0.08em 0.25em;
+  }
+
+  .etiqueta_pq2 {
+    font-family: 'Orbitron';
+    font-size: var(--fs-config-label);
+    text-align: center;
+    background-color: grey;
+    color: white;
+    padding: 0.08em 0.2em;
+  }
+
+  .etiqueta_tiempo {
+    font-family: 'LEDCalculator';
+    font-size: calc(var(--fs-time-reference) * 0.6);
+    line-height: 0.92;
+    text-align: center;
+    color: black;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  /* ---------- Cronómetros principales ---------- */
+  .timer,
+  .timer2 {
+    background-color: lightgreen;
+    color: black;
+    text-align: center;
+  }
+
+  .timer {
+    font-family: 'Orbitron';
+    font-size: var(--fs-timer);
+  }
+
+  .timer2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    min-height: var(--timer-box-h);
+    height: var(--timer-box-h);
+    padding: clamp(0.22rem, 1.1vh, 0.75rem) clamp(0.25rem, 0.9vw, 0.9rem);
+    font-family: 'LEDCalculator';
+    font-weight: bold;
+    font-size: var(--fs-timer);
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .timer-t1 { background-color: yellow; }
+  .timer-t2 { background-color: orange; }
+  .timer-t3 {
+    background-color: red;
+    color: white;
+  }
+
+  /* ---------- Parpadeo ---------- */
+  @keyframes blink {
+    0%, 100% { background-color: red; color: white; }
+    50% { background-color: black; color: white; }
+  }
+
+  .blinking {
+    animation: blink 1s infinite;
+  }
+
+  /* ---------- Configuración ---------- */
+  .divconfig {
+    font-family: 'Orbitron';
+    background-color: beige;
+    color: black;
+    padding: clamp(0.08rem, 0.45vmin, 0.35rem) !important;
+    text-align: center;
+    justify-content: center;
+    min-height: clamp(4.8rem, 15vh, 8.8rem);
+  }
+
+  .custom-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    text-align: center;
+    text-align-last: center;
+    background: white;
+    width: 100% !important;
+    min-height: clamp(2.2rem, 6.4vh, 3.9rem);
+    height: clamp(2.2rem, 6.4vh, 3.9rem) !important;
+    margin: 0 !important;
+    padding: 0.2rem !important;
+    font-size: var(--fs-text-input);
+    font-weight: 700;
+  }
+
+  /* ---------- Botones ---------- */
+  .btn-crono {
+    width: clamp(6.5rem, 15vmin, 12rem);
+    height: var(--button-h);
+    min-height: unset;
+    padding: 0.05rem 0.3rem;
+    font-size: var(--fs-button);
+    font-weight: 700;
+    line-height: 1.1;
+  }
+
+  .container-fluid > .row:nth-child(2) .mt-3 {
+    margin-top: clamp(0.25rem, 0.9vh, 0.7rem) !important;
+  }
   
-  /*! Generated by Font Squirrel (https://www.fontsquirrel.com) on January 7, 2023 */
-  /*! Lo he mirado aqui, aunque ahora ya me funciona de todas las formas:
-  https://www.reddit.com/r/neocities/comments/p2ohhf/martindisks_messy_guide_to_having_custom_fonts_on/ */
-      @font-face {
-          font-family: 'digital-7regular';
-          src: url('./digital-7-webfont.woff2') format('woff2'),
-               url('./digital-7-webfont.woff') format('woff');
-          font-weight: normal;
-          font-style: normal;
-      }
+  #btnResetTotal {
+    height: 7vh !important;
+    min-height: 60px !important;
+    line-height: 1.1;
+  }
 
-      @font-face {
-        font-family: 'LEDCalculator';
-        src: url('LEDCalculator.ttf') format('truetype');
-      }
+  /* ---------- Inputs de texto ---------- */
+  .inputpending,
+  .inputpending_pq {
+    font-family: 'Orbitron';
+    font-size: var(--fs-text-input);
+    text-align: right;
+    background-color: beige;
+    color: black;
+    padding: 0.05rem 0.35rem;
+  }
 
-      @font-face {
-        font-family: 'digital-7-mono';
-        src: url('digital-7-mono.ttf') format('truetype');
-      }
-      
-      /* Fuerza a que se vea en formato horizontal */
-      
-      @media (orientation: portrait) {
-      body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        text-align: center;
-        background-color: #f8d7da; /* Fondo rojo claro */
-        color: #721c24; /* Texto rojo oscuro */
-      }
-    
-      .rotate-message {
-        display: block;
-      }
-    
-      .app-content {
-        display: none;
-      }
-    }
-    
-    @media (orientation: landscape) {
-      .rotate-message {
-        display: none;
-      }
-    
-      .app-content {
-        display: block;
-      }
-    }
-      
-     /* quitar bordes blancos de la tabla del fondo 
-     .table-bordered {
-      border: none;
-    } */
+  .inputpending,
+  .inputpending_pq,
+  input.form-control {
+    min-height: var(--text-input-h);
+    height: var(--text-input-h) !important;
+  }
 
+  /* ---------- Presiones ---------- */
+  .inputpresion,
+  .inputpresionoff,
+  .inputpresionoff3 {
+    font-family: 'Orbitron';
+    font-size: var(--fs-pressure);
+    text-align: right;
+    background-color: beige;
+    color: black;
+    padding: 0.02rem 0.35rem;
+    font-weight: 700;
+  }
 
-     /* Estilos para el display del RELOJ */
-    .reloj {
-      font-family: 'digital-7-mono';
-      font-size: 2.3vw;
-      background-color: black;
-      color: white;
-      padding: 1px 2px;
-      border-radius: 5px;
-      text-align: center;
-      justify-content: center !important; /* forzar centrado */
-      align-items: center !important; /* forzar centrado */
+  .inputpresionoff,
+  .inputpresionoff3 {
+    display: none;
+  }
+
+  .inputpresionoff3 {
+    color: red;
+  }
+
+  .inputpresion,
+  .inputpresionoff,
+  .inputpresionoff3,
+  #P51,
+  #P52,
+  #P53 {
+    min-height: var(--pressure-h);
+    height: var(--pressure-h) !important;
+  }
+
+  .pout-display {
+    display: inline-flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: var(--pressure-h);
+    height: var(--pressure-h);
+    padding: 0.02rem 0.25rem;
+    font-family: 'Orbitron';
+    font-size: clamp(1.25rem, 3.4vmin, 2.65rem);
+    color: gray;
+    overflow: hidden;
+  }
+
+  .pout-label {
+    color: gray;
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 0.78em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .pout-value {
+    color: red;
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 1.05em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ---------- Columnas internas antiguas ---------- */
+  .fila-color {
+    height: auto;
+    min-height: clamp(2.8rem, 6.2vh, 5.4rem);
+    align-items: center;
+  }
+
+  .left-div {
+    float: left;
+    width: 49%;
+  }
+
+  .right-div {
+    float: right;
+    width: 49%;
+  }
+
+  /* ============================================================
+     Ajustes por tipo de pantalla
+     ============================================================ */
+
+  /* Tablets landscape casi cuadradas */
+  @media (orientation: landscape) and (max-aspect-ratio: 4/3) {
+    :root {
+      --row-gap-y: clamp(0.04rem, 0.32vh, 0.25rem);
+      --fs-clock: clamp(1.2rem, 3.35vh, 2.2rem);
+      --fs-team-label: clamp(1.1rem, 3.1vh, 2.05rem);
+      --fs-row-label: clamp(0.95rem, 2.7vh, 1.7rem);
+      --fs-config-label: clamp(0.78rem, 2.2vh, 1.25rem);
+      --fs-time-reference: clamp(2.05rem, min(7.4vh, 5.6vw), 4.8rem);
+      --fs-timer: clamp(2.45rem, min(8.8vh, 4.65vw), 5.4rem);
+      --fs-pressure: clamp(1.2rem, 3.65vh, 2.55rem);
+      --fs-button: clamp(0.95rem, 2.65vh, 1.65rem);
+      --timer-box-h: clamp(4.8rem, 15.5vh, 8.2rem);
+      --pressure-h: clamp(2.5rem, 8.4vh, 4.6rem);
     }
-    /* Estilos para las etiquetas */
-    .etiqueta {
-      font-family: 'Orbitron';
-      font-size: 2vw;
-      text-align: right;
-      background-color: grey;
-      color: white;
-      padding: 1px 2px;
-      border-radius: 5px;
+
+    .container-fluid > .row:nth-child(2) {
+      flex-grow: 2.35;
     }
-    .etiqueta_pq {
-      font-family: 'Orbitron';
-      font-size: 1.5vw;
-      text-align: right;
-      background-color: grey;
-      color: white;
-      padding: 1px 2px;
-      border-radius: 5px;
+  }
+
+  /* Pantallas estrechas en horizontal: baja fuente antes de cortar segundos */
+  @media (orientation: landscape) and (max-width: 760px) {
+    :root {
+      --fs-timer: clamp(1.8rem, 4.45vw, 3.2rem);
     }
-    .etiqueta_pq2 {
-      font-family: 'Orbitron';
-      font-size: 1vw;
-      text-align: center;
-      background-color: grey;
-      color: white;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
-    .etiqueta_tiempo {
-      font-family: 'LEDCalculator';
-      font-size: 2vw;
-      text-align: center;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
-    /* Estilos para los inputs pendientes de ser rellenados */
-    .inputpending {
-      font-family: 'Orbitron';
-      font-size: 1.5vw; /* font-size: 2vw; cambio a 1,5 */
-      text-align: right;
-      background-color: beige;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
-    .inputpending_pq {
-      font-family: 'Orbitron';
-      font-size: 1.5vw;
-      text-align: right;
-      background-color: beige;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
-    .inputpresion {
-      font-family: 'Orbitron';
-      font-size: 1.5vw; /* font-size: 2vw; cambio a 1,5 */
-      text-align: right;
-      background-color: beige;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
-    .inputpresionoff {
-      font-family: 'Orbitron';
-      font-size: 1.5vw; /* font-size: 2vw; cambio a 1,5 */
-      text-align: right;
-      background-color: beige;
-      color: black;
-      padding: 1px 2px;
-      display: none;
-    }
-    .inputpresionoff3 {
-      font-family: 'Orbitron';
-      font-size: 1.5vw; /* font-size: 2vw; cambio a 1,5 */
-      text-align: right;
-      background-color: beige;
-      color: red;
-      padding: 1px 2px;
-      display: none;
-    }
-    /* Estilos para el display del cronómetro */
-    .timer {
-      font-family: 'Orbitron';
-      font-size: 3vw;
-      background-color: lightgreen;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
-    }
+
     .timer2 {
-      font-family: 'LEDCalculator';
-      font-weight: bold;
-      font-size: 4vw;
-      background-color: lightgreen;
-      color: black;
-      padding: 1px 2px;
-      border-radius: 5px;
+      letter-spacing: -0.07em;
+      padding-left: 0.18rem;
+      padding-right: 0.18rem;
     }
-    .divconfig {
-      font-family: 'Orbitron';
-      background-color: beige;
-      color: black;
-      padding: 10px 20px;
-      border-radius: 5px;
-      text-align: center
-    }
-    /* Estilos para el display del cronómetro cuando llega al tiempo de la alarma 1*/
-    .timer-t1 {
-      background-color: yellow;
-    }
-    /* Estilos para el display del cronómetro cuando llega al tiempo de la alarma 2*/
-    .timer-t2 {
-      background-color: orange;
-    }  
-    /* Estilos para el display del cronómetro cuando llega al tiempo de la alarma 3*/
-    .timer-t3 {
-      background-color: red;
-      color: white;
-    }
-    
-    /* Estilo para el parpadeo */
-    @keyframes blink {
-      0%, 100% { background-color: red; color: white;}
-      50% { background-color: black; color: white;}
+  }
+
+  /* Pantallas bajas: evita cortes y permite scroll si hace falta */
+  @media (orientation: landscape) and (max-height: 520px) {
+    :root {
+      --row-gap-y: 0.03rem;
+      --fs-timer: clamp(1.7rem, min(7vh, 4.7vw), 3.2rem);
+      --fs-pressure: clamp(0.95rem, 3vh, 1.55rem);
+      --fs-team-label: clamp(0.9rem, 2.7vh, 1.4rem);
+      --fs-row-label: clamp(0.78rem, 2.35vh, 1.15rem);
+      --fs-time-reference: clamp(1.35rem, 4.8vh, 2.5rem);
+      --timer-box-h: clamp(2.8rem, 13vh, 4.2rem);
+      --pressure-h: clamp(1.75rem, 6.3vh, 2.4rem);
+      --text-input-h: clamp(1.75rem, 6.3vh, 2.4rem);
+      --button-h: clamp(1.6rem, 5.5vh, 2.2rem);
     }
 
-    .blinking {
-      animation: blink 1s infinite;
+    .container-fluid > .row:nth-child(2) {
+      flex-grow: 1.85;
     }
-    
-    
-    /* Estilos para los botones del cronómetro, hacerlos grandes      */
-    .btn-crono {
-      width: 9vw; 
-      height: 3vw; 
-      font-size: 1.5vw;
+
+    .container-fluid {
+      min-height: auto;
     }
-    .fila-color {
-      height: 4.8vw; 
+
+    .container-fluid > .row {
+      flex: 0 0 auto;
     }
-    .left-div {
-      float: left;
-      width: 50%;
+
+    .divconfig {
+      min-height: auto;
+      padding: 0.15rem !important;
     }
-    
-    .right-div {
-      float: right;
-      width: 50%;
-    }
-    
-    /* Escala dinámica del texto en los selects */
-    .custom-select {
-      /* Ocultar flechas */
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      text-align: center; /* Centra el texto en el selector */
-      text-align-last: center; /* Centra el texto seleccionado */
-      background: white;
-      font-size: calc(1.5vw);
-      margin: 0 !important; /* Sobrescribe márgenes */
-      padding: 0.2rem !important; /* Ajustar padding */
-      width: 100% !important; /* Forzar ancho completo */
-      box-sizing: border-box;
+  }
+
   </style> 
   
 </head>
@@ -325,7 +588,14 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
     <!-- Fila de los cronómetros -->
     <div class="row  py-2" style="background-color: lightgrey;">
       <!-- Columna vacía de separación -->
-			<div class="col-1"></div>
+			<div class="col-1">
+				<button
+					id="btnResetTotal"
+					class="btn btn-warning btn-crono w-100"
+					onclick="hardResetApp()">
+					RESET<br>TOTAL
+				</button>
+			</div>
       <!-- Columna del picker-select -->
 			<div class="col-1 divconfig etiqueta_pq2" id="columna-picker">
         <!-- Widget Dropdown Picker -->
@@ -369,7 +639,7 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
         <!-- Botones del cronómetro 1 -->
         <div class="text-center mt-3">
           <button id="StartBtn1" class="btn btn-success mr-2 btn-crono" onclick="startTimer(1)">START</button>
-          <button id="StopBtn1" class="btn btn-danger  mr-2 btn-crono">STOP</button>
+          <button id="StopBtn1" class="btn btn-danger  mr-2 btn-crono" onclick="stopTimer(1)">STOP</button>
         </div>
       </div>      
        <!-- Columna del cronómetro 2 -->
@@ -525,16 +795,28 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
         <div id="TF_TXT"></div>
       </div>
       <div class="col-3">
-        <input type="number" class="form-control left-div inputpresionoff" id="P51" placeholder="PRES-OUT" >
-        <input type="number" class="form-control right-div inputpresionoff3" id="P41" >
+        <div class="left-div pout-display">
+          <span class="pout-label">P.OUT:</span>
+          <span class="pout-value" id="Pout1"></span>
+        </div>
+        <input type="hidden" id="P41" disabled>
+        <input type="number" class="form-control right-div inputpresionoff" id="P51" placeholder="PRES-OUT" >
       </div>
       <div class="col-3">
-        <input type="number" class="form-control left-div inputpresionoff" id="P52" placeholder="PRES-OUT" >
-        <input type="number" class="form-control right-div inputpresionoff3" id="P42" >
+        <div class="left-div pout-display">
+          <span class="pout-label">P.OUT:</span>
+          <span class="pout-value" id="Pout2"></span>
+        </div>
+        <input type="hidden" id="P42" disabled>
+        <input type="number" class="form-control right-div inputpresionoff" id="P52" placeholder="PRES-OUT" >
       </div>
       <div class="col-3">
-        <input type="number" class="form-control left-div inputpresionoff" id="P53" placeholder="PRES-OUT" >
-        <input type="number" class="form-control right-div inputpresionoff3" id="P43" >
+        <div class="left-div pout-display">
+          <span class="pout-label">P.OUT:</span>
+          <span class="pout-value" id="Pout3"></span>
+        </div>
+        <input type="hidden" id="P43" disabled>
+        <input type="number" class="form-control right-div inputpresionoff" id="P53" placeholder="PRES-OUT" >
       </div>      
     </div>  
   </div>
@@ -572,29 +854,69 @@ audio.forEach(row => {
   });
 });
 
+// El estado acústico/visual se controla de forma centralizada para evitar
+// que un botón o un cronómetro se queden "colgados" en blinking.
+var acknowledgedAlarmState = [0, 0, 0, 0];
+
+function clearTimerAlarmVisual(timerNumber) {
+  const timerElement = document.getElementById(`timer${timerNumber}`);
+  timerElement.classList.remove("blinking", "timer-t1", "timer-t2", "timer-t3", "timer");
+  timerElement.onclick = null;
+}
+
+function setTimerAlarmVisual(timerNumber, estado, pendingAck) {
+  const timerElement = document.getElementById(`timer${timerNumber}`);
+  if (!timerElement) { return; }
+
+  timerElement.classList.remove("timer-t1", "timer-t2", "timer-t3", "timer", "blinking");
+  timerElement.onclick = null;
+
+  // Estado 0 = todavía no ha alcanzado ningún hito temporal.
+  // No debe aplicar color de alarma.
+  if (estado < 1) { return; }
+
+  timerElement.classList.add(`timer-t${estado}`);
+  if (pendingAck) {
+    timerElement.classList.add("blinking");
+    timerElement.onclick = function() { stopAlarmSound(timerNumber, estado); };
+  }
+}
+
+function stopAllAlarmSounds(timerNumber) {
+  if (!audio[timerNumber - 1]) { return; }
+  audio[timerNumber - 1].forEach(a => {
+    a.pause();
+    a.currentTime = 0;
+  });
+  alarm[timerNumber] = false;
+}
+
 // Function to play the regular alarm sound for a specific timer
 function playAlarmSound(timerNumber,estado) {
+  stopAllAlarmSounds(timerNumber); // evita solapes si se salta de T1 a T2/T3
   alarm[timerNumber] = true;
-  audio[timerNumber - 1][estado-1].play();
-  document.getElementById(`timer${timerNumber}`).classList.add('blinking');
+  audio[timerNumber - 1][estado-1].play().catch(() => {
+    // El navegador puede bloquear el audio si no hay interacción previa.
+    // El parpadeo queda igualmente como aviso visual.
+  });
+  setTimerAlarmVisual(timerNumber, estado, true);
 }
 
 // Function to stop the regular alarm sound for a specific timer
 function stopAlarmSound(timerNumber,estado) {
-  if(alarm[timerNumber]) {
-    alarm[timerNumber] = false;
-    for (let i = estado - 1; i >= 0; i--) {
-      audio[timerNumber - 1][i].pause();    // Pausar la alarma correspondiente
-      audio[timerNumber - 1][i].currentTime = 0; // Reiniciar la alarma (opcional, si deseas que vuelva al inicio)
-    }
-    document.getElementById(`timer${timerNumber}`).classList.remove("blinking");
-    document.getElementById(`timer${timerNumber}`).onclick = null; // Eliminamos el evento después del click
-    document.getElementById(`timer${timerNumber}`).classList.add(`timer-t${estado}`);
+  stopAllAlarmSounds(timerNumber);
+  if (estado < 1) {
+    clearTimerAlarmVisual(timerNumber);
+    saveAppState();
+    return;
   }
+  acknowledgedAlarmState[timerNumber] = Math.max(acknowledgedAlarmState[timerNumber] || 0, estado);
+  setTimerAlarmVisual(timerNumber, estado, false);
+  saveAppState();
 }
-  
 
-  // Asignamos un manejador de evento "change" al elemento "select"
+
+// Asignamos un manejador de evento "change" al elemento "select"
   dropdownPicker.addEventListener("change", function() {
     // Obtenemos el valor seleccionado
     alarmTime = dropdownPicker.value;
@@ -606,6 +928,7 @@ function stopAlarmSound(timerNumber,estado) {
   countingSelect.addEventListener("change", function() {
     // Obtenemos el valor seleccionado
     countingDown = (countingSelect.value == "Down");
+    saveAppState();
   });
   
   // Empezamos el RELOJ
@@ -623,6 +946,222 @@ function stopAlarmSound(timerNumber,estado) {
   var elapsedTime = [0, 0, 0, 0];
   var timeNotSetted = true;
 
+  // ============================================================
+  // Persistencia local de la intervención
+  // ------------------------------------------------------------
+  // Guarda el estado en localStorage para poder cerrar/reabrir
+  // la app y recuperar cronómetros, presiones, textos y estilos.
+  // ============================================================
+  const STORAGE_KEY = "COTIN_estado_v1";
+  var restoringState = false;
+
+  function getElementState(id) {
+    const el = document.getElementById(id);
+    if (!el) { return null; }
+    return {
+      value: ("value" in el) ? el.value : undefined,
+      innerHTML: el.innerHTML,
+      textContent: el.textContent,
+      display: el.style.display,
+      disabled: !!el.disabled,
+      className: el.className
+    };
+  }
+
+  function applyElementState(id, state) {
+    const el = document.getElementById(id);
+    if (!el || !state) { return; }
+    if (state.value !== undefined && "value" in el) { el.value = state.value; }
+    if (state.innerHTML !== undefined) { el.innerHTML = state.innerHTML; }
+    if (state.display !== undefined) { el.style.display = state.display; }
+    if (state.disabled !== undefined) { el.disabled = state.disabled; }
+    if (state.className !== undefined) { el.className = state.className; }
+  }
+
+  var pendingSaveTimeout = null;
+
+  function buildAppState() {
+    const idsToSave = [
+      "dropdown-picker", "CuentaUpDown",
+      "columna-picker", "columna-CuentaUpDown",
+      "T0_TXT", "T1_TXT", "T2_TXT", "T3_TXT", "TF_TXT",
+      "Equipo1", "Equipo2", "Equipo3",
+      "Asignacion1", "Asignacion2", "Asignacion3",
+      "Pout1", "Pout2", "Pout3"
+    ];
+
+    for (let equipo = 1; equipo <= 3; equipo++) {
+      idsToSave.push(`timer${equipo}`);
+      idsToSave.push(`StartBtn${equipo}`);
+      idsToSave.push(`StopBtn${equipo}`);
+      idsToSave.push(`initTimeField${equipo}`);
+      idsToSave.push(`oneQuartersTimeField${equipo}`);
+      idsToSave.push(`twoQuartersTimeField${equipo}`);
+      idsToSave.push(`totalTimeField${equipo}`);
+      for (let estado = 0; estado <= 5; estado++) {
+        idsToSave.push(`P${estado}${equipo}`);
+      }
+    }
+
+    const elements = {};
+    idsToSave.forEach(id => { elements[id] = getElementState(id); });
+
+    const running = [false, false, false, false];
+    for (let i = 1; i <= 3; i++) {
+      running[i] = timer[i] !== 0;
+    }
+
+    return {
+      version: 2,
+      savedAt: Date.now(),
+      alarmTime: alarmTime,
+      countingDown: countingDown,
+      timeNotSetted: timeNotSetted,
+      startTime: startTime,
+      pausedTime: pausedTime,
+      elapsedTime: elapsedTime,
+      acknowledgedAlarmState: acknowledgedAlarmState,
+      running: running,
+      elements: elements
+    };
+  }
+
+  function saveAppStateNow() {
+    if (restoringState) { return; }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppState()));
+    } catch (e) {
+      console.warn("No se ha podido guardar el estado local de COTIN", e);
+    }
+  }
+
+  function saveAppState() {
+    if (restoringState) { return; }
+
+    // localStorage es síncrono: agrupamos escrituras para no grabar varias
+    // veces seguidas cuando hay cronómetros activos o se teclean presiones.
+    if (pendingSaveTimeout) { clearTimeout(pendingSaveTimeout); }
+    pendingSaveTimeout = setTimeout(function() {
+      pendingSaveTimeout = null;
+      saveAppStateNow();
+    }, 250);
+  }
+
+  function restoreButtonHandlers(timerNumber, running, hasStarted) {
+    const startButton = document.getElementById(`StartBtn${timerNumber}`);
+    const stopButton = document.getElementById(`StopBtn${timerNumber}`);
+
+    if (startButton) {
+      startButton.onclick = function() { startTimer(timerNumber); };
+      startButton.disabled = !!running;
+    }
+
+    if (!stopButton) { return; }
+
+    if (running) {
+      stopButton.textContent = "STOP";
+      stopButton.classList.remove("btn-warning");
+      stopButton.classList.add("btn-danger");
+      stopButton.onclick = function() { stopTimer(timerNumber); };
+    } else if (hasStarted) {
+      stopButton.textContent = "RESET";
+      stopButton.classList.remove("btn-danger");
+      stopButton.classList.add("btn-warning");
+      stopButton.onclick = function() { resetTimer(timerNumber); };
+    } else {
+      stopButton.textContent = "STOP";
+      stopButton.classList.remove("btn-warning");
+      stopButton.classList.add("btn-danger");
+      stopButton.onclick = null;
+    }
+  }
+
+  function restoreAppState() {
+    let rawState;
+    try {
+      rawState = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      console.warn("No se ha podido leer el estado local de COTIN", e);
+      return;
+    }
+    if (!rawState) { return; }
+
+    let state;
+    try {
+      state = JSON.parse(rawState);
+    } catch (e) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      return;
+    }
+
+    restoringState = true;
+
+    alarmTime = state.alarmTime || alarmTime;
+    countingDown = (typeof state.countingDown === "boolean") ? state.countingDown : countingDown;
+    timeNotSetted = (typeof state.timeNotSetted === "boolean") ? state.timeNotSetted : timeNotSetted;
+
+    startTime = Array.isArray(state.startTime) ? state.startTime : startTime;
+    pausedTime = Array.isArray(state.pausedTime) ? state.pausedTime : pausedTime;
+    elapsedTime = Array.isArray(state.elapsedTime) ? state.elapsedTime : elapsedTime;
+    acknowledgedAlarmState = Array.isArray(state.acknowledgedAlarmState) ? state.acknowledgedAlarmState : acknowledgedAlarmState;
+
+    if (state.elements) {
+      Object.keys(state.elements).forEach(id => applyElementState(id, state.elements[id]));
+    }
+
+    dropdownPicker.value = String(alarmTime / 60);
+    countingSelect.value = countingDown ? "Down" : "Up";
+    dropdownPicker.disabled = !timeNotSetted;
+    countingSelect.disabled = !timeNotSetted;
+
+    // Los intervalos no se pueden guardar; se recrean si el reloj estaba corriendo.
+    timer = [0, 0, 0, 0];
+    for (let i = 1; i <= 3; i++) {
+      const wasRunning = !!(state.running && state.running[i]);
+      const hasStarted = !!(startTime[i] || pausedTime[i] || elapsedTime[i]);
+
+      stopAllAlarmSounds(i);
+
+      if (wasRunning) {
+        timer[i] = setInterval(function() {
+          updateTimer(i);
+        }, 1000);
+        updateTimer(i);
+      }
+
+      restoreButtonHandlers(i, wasRunning, hasStarted);
+
+      const currentState = getCurrentAlarmState(i);
+      if (hasStarted && currentState > 0 && acknowledgedAlarmState[i] >= currentState) {
+        setTimerAlarmVisual(i, currentState, false);
+      }
+    }
+
+    restoringState = false;
+  }
+
+  function bindAutosaveEvents() {
+    const autosaveIds = [
+      "dropdown-picker", "CuentaUpDown",
+      "Equipo1", "Equipo2", "Equipo3",
+      "Asignacion1", "Asignacion2", "Asignacion3"
+    ];
+
+    for (let equipo = 1; equipo <= 3; equipo++) {
+      for (let estado = 0; estado <= 5; estado++) {
+        autosaveIds.push(`P${estado}${equipo}`);
+      }
+    }
+
+    autosaveIds.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) { return; }
+      el.addEventListener("input", saveAppState);
+      el.addEventListener("change", saveAppState);
+    });
+  }
+
+
   // Función que fija el tiempo INICIAL de los cronómetros (dependiendo de los valores elegidos en el desplegable)
   function setTime() {
     timeNotSetted = false;
@@ -633,6 +1172,7 @@ function stopAlarmSound(timerNumber,estado) {
     // document.getElementById("columna-picker").style.backgroundColor = "lightgrey";
     document.getElementById("columna-picker").style.backgroundColor = "lightgrey";
     document.getElementById("columna-CuentaUpDown").style.backgroundColor = "lightgrey";
+    saveAppState();
 
     if (countingDown) {
       document.getElementById("T0_TXT").innerHTML += getFormattedTime(Math.round(alarmTime * 3 / 3));
@@ -656,7 +1196,7 @@ function stopAlarmSound(timerNumber,estado) {
 		startButton.disabled = true;
 		// Calcula el tiempo que debe escribir en los cronómetros, si no se ha hecho antes
     if (timeNotSetted) {setTime();}
-    mostrarInput(5,timerNumber); // Permite la anotación de la Pout Real en en campo de presion "5" PRES-OUT
+    mostrarInput(5,timerNumber); // Mostrar campo de presión de salida real inmediatamente al iniciar
     
     // Si el cronómetro está detenido, guardamos el tiempo de inicio
     if (timer[timerNumber] === 0) {
@@ -676,97 +1216,119 @@ function stopAlarmSound(timerNumber,estado) {
     stopButton.onclick = function() {
       stopTimer(timerNumber);
       };
+    saveAppState();
         
   }
   
 
+
+function getCurrentAlarmState(timerNumber) {
+  if (elapsedTime[timerNumber] >= alarmTime) { return 3; }
+  if (elapsedTime[timerNumber] >= Math.round(alarmTime * 2 / 3)) { return 2; }
+  if (elapsedTime[timerNumber] >= Math.round(alarmTime / 3)) { return 1; }
+  return 0;
+}
+
 // Función que detiene el cronómetro
 function stopTimer(timerNumber) {
+  // Si todavía no se ha iniciado, no hacemos nada.
+  if (timer[timerNumber] === 0 && startTime[timerNumber] === 0) { return; }
+
   // Detenemos el intervalo del cronómetro
   clearInterval(timer[timerNumber]);
-  timer[timerNumber] = 0;  // Marcamos el cronómetro como detenido
-  pausedTime[timerNumber] = Date.now() - startTime[timerNumber]; // Almacenamos el tiempo pausado
+  timer[timerNumber] = 0;
+  pausedTime[timerNumber] = Date.now() - startTime[timerNumber];
+
+  // Parar sonido/parpadeo pendiente, pero conservar el color de la última alarma reconocida.
+  if (alarm[timerNumber]) {
+    const currentState = getCurrentAlarmState(timerNumber);
+    stopAlarmSound(timerNumber, currentState);
+  }
 
   // Habilita el click sobre el botón de START de nuevo:
 	const startButton = document.getElementById(`StartBtn${timerNumber}`);
 	startButton.disabled = false;  
 
-  // Cambia el evento click al botón de STOP para mostrar el pop-up
-  // Cambiar el botón de RESET a STOP y restaurar el estilo
   const stopButton = document.getElementById(`StopBtn${timerNumber}`);
-  stopButton.textContent = "RESET"; // Cambiar el texto a "STOP"
-  stopButton.classList.remove("btn-danger"); // Eliminar la clase de advertencia
-  stopButton.classList.add("btn-warning"); // Agregar la clase de "btn-danger" para color rojo
-  // Cambia la función onclick al comportamiento (resetTimer)
+  stopButton.textContent = "RESET";
+  stopButton.classList.remove("btn-danger");
+  stopButton.classList.add("btn-warning");
   stopButton.onclick = function() {
     resetTimer(timerNumber);
   };
-
+  saveAppState();
 }
 
 
 // Función para resetear cronómetro y campos asociados
 function resetTimer(timerNumber) {
-  
-  // Mostrar un cuadro de confirmación
+
   const confirmReset = confirm("¿Seguro de que desea resetear el contador?");
-  // Si el usuario cancela, salir de la función sin hacer nada
   if (!confirmReset) { return; }
-  
-  // Detener el cronómetro si está en ejecución
+
   clearInterval(timer[timerNumber]);
-  timer[timerNumber] = 0;  // Marcamos el cronómetro como detenido (asignamos 0
-  
-  // Resetear variables de tiempo
+  timer[timerNumber] = 0;
+
   elapsedTime[timerNumber] = 0;
   startTime[timerNumber] = 0;
   pausedTime[timerNumber] = 0;
-  // Resetear el cronómetro a cero
-  document.getElementById(`timer${timerNumber}`).innerHTML = "00:00:00";
-  
-  // Paro las alarmas si están sonando:
-  stopAlarmSound(timerNumber,3);
+  acknowledgedAlarmState[timerNumber] = 0;
 
-  // Borrar los valores de presión (P1X, P2X, P3X, P4X)
-  document.getElementById(`P0${timerNumber}`).value = ""; document.getElementById(`P0${timerNumber}`).disabled = false;
-  document.getElementById(`P1${timerNumber}`).value = ""; document.getElementById(`P1${timerNumber}`).disabled = false;
-  document.getElementById(`P2${timerNumber}`).value = ""; document.getElementById(`P2${timerNumber}`).disabled = false;
-  document.getElementById(`P3${timerNumber}`).value = ""; document.getElementById(`P3${timerNumber}`).disabled = false;
-  document.getElementById(`P4${timerNumber}`).value = "";
-  document.getElementById(`P5${timerNumber}`).value = "";
+  const timerElement = document.getElementById(`timer${timerNumber}`);
+  timerElement.innerHTML = "00:00:00";
 
-  // Ocultar los inputs relacionados
-  // document.getElementById(`P0${timerNumber}`).style.display = "none"; --> este debe quedar habilitado, pero vacío.
-  document.getElementById(`P1${timerNumber}`).style.display = "none";
-  document.getElementById(`P2${timerNumber}`).style.display = "none";
-  document.getElementById(`P3${timerNumber}`).style.display = "none";
-  document.getElementById(`P4${timerNumber}`).style.display = "none";
-  document.getElementById(`P5${timerNumber}`).style.display = "none";
+  // Parar cualquier audio y limpiar cualquier estado visual residual.
+  stopAllAlarmSounds(timerNumber);
+  clearTimerAlarmVisual(timerNumber);
 
-  // Ocultar los RELOJES relacionados
-  // document.getElementById(`P0${timerNumber}`).style.display = "none"; --> este debe quedar habilitado, pero vacío.
-  // relojt1 = document.getElementById(`initTimeField${timerNumber}`); relojt1.innerHTML = ""; relojt1.style = "";  relojt1.ClassName = "";
-  document.getElementById(`initTimeField${timerNumber}`).style.display = "none";
-  document.getElementById(`oneQuartersTimeField${timerNumber}`).style.display = "none";
-  document.getElementById(`twoQuartersTimeField${timerNumber}`).style.display = "none";
-  document.getElementById(`totalTimeField${timerNumber}`).style.display = "none";
+  // Borrar valores y estados de presión.
+  [0,1,2,3,4,5].forEach(estado => {
+    const el = document.getElementById(`P${estado}${timerNumber}`);
+    if (!el) { return; }
+    el.value = "";
+    el.disabled = false;
+    el.classList.remove("blinking");
+  });
 
-  // Cambiamos el fondo del Cronómetro a verde
-  document.getElementById(`timer${timerNumber}`).onclick = null; // Eliminamos el evento después del click
-  document.getElementById(`timer${timerNumber}`).classList.remove("blinking");
-  document.getElementById(`timer${timerNumber}`).classList.remove("timer-t1");
-  document.getElementById(`timer${timerNumber}`).classList.remove("timer-t2");
-  document.getElementById(`timer${timerNumber}`).classList.remove("timer-t3");
-  document.getElementById(`timer${timerNumber}`).onclick = null; // Eliminamos el evento después del click
-  document.getElementById(`timer${timerNumber}`).classList.add("timer");
-  
-  // Cambiar el botón de RESET a STOP y restaurar el estilo
+  // P4 es el valor teórico oculto; vuelve a quedar bloqueado tras limpiar.
+  const p4 = document.getElementById(`P4${timerNumber}`);
+  if (p4) { p4.disabled = true; }
+
+  // Limpiar valor visual P.OUT teórico.
+  const pout = document.getElementById(`Pout${timerNumber}`);
+  if (pout) { pout.textContent = ""; }
+
+  // Ocultar inputs anticipados/condicionales. P0 queda visible.
+  [1,2,3,5].forEach(estado => {
+    const el = document.getElementById(`P${estado}${timerNumber}`);
+    if (el) { el.style.display = "none"; }
+  });
+
+  // Ocultar relojes relacionados y limpiar contenido/clase visual.
+  [
+    `initTimeField${timerNumber}`,
+    `oneQuartersTimeField${timerNumber}`,
+    `twoQuartersTimeField${timerNumber}`,
+    `totalTimeField${timerNumber}`
+  ].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) { return; }
+    el.innerHTML = "";
+    el.classList.remove("reloj");
+    el.style.display = "none";
+  });
+
+  // Restaurar botón START.
+	const startButton = document.getElementById(`StartBtn${timerNumber}`);
+	startButton.disabled = false;
+
+  // Restaurar botón STOP al estado inicial, sin acción hasta que se pulse START.
   const stopButton = document.getElementById(`StopBtn${timerNumber}`);
-  stopButton.textContent = "STOP"; // Cambiar el texto a "STOP"
-  stopButton.classList.remove("btn-warning"); // Eliminar la clase de advertencia
-  stopButton.classList.add("btn-danger"); // Agregar la clase de "btn-danger" para color rojo
-  // Restaurar la función onclick, que debe estar deshabilitado, porque está parado
+  stopButton.textContent = "STOP";
+  stopButton.classList.remove("btn-warning");
+  stopButton.classList.add("btn-danger");
   stopButton.onclick = null;
+  saveAppState();
 }
 
 
@@ -794,13 +1356,14 @@ function resetTimer(timerNumber) {
 				document.getElementById(`initTimeField${timerNumber}`).innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 				document.getElementById(`initTimeField${timerNumber}`).classList.add('reloj');
 				document.getElementById(`initTimeField${timerNumber}`).style.display = "block";
+				mostrarInput(1,timerNumber); // Mostrar campos de presión para T1 al inicio
 			}
 			// Si hemos llegado a 1/3 del tiempo de la alarma, actualizamos el campo correspondiente
 			if (elapsedTime[timerNumber] == Math.round(alarmTime / 3)) {
 				document.getElementById(`oneQuartersTimeField${timerNumber}`).innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 				document.getElementById(`oneQuartersTimeField${timerNumber}`).classList.add('reloj');
 				document.getElementById(`oneQuartersTimeField${timerNumber}`).style.display = "block";
-        mostrarInput(1,timerNumber);
+        mostrarInput(2,timerNumber); // Mostrar campos de presión para T2 cuando se cumple T1
 				playAlarmSound(timerNumber,1);
 				// Añadimos el evento para detener el parpadeo al hacer clic
         document.getElementById(`timer${timerNumber}`).onclick = function() { stopAlarmSound(timerNumber,1); };
@@ -810,7 +1373,7 @@ function resetTimer(timerNumber) {
 				document.getElementById(`twoQuartersTimeField${timerNumber}`).innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 				document.getElementById(`twoQuartersTimeField${timerNumber}`).classList.add('reloj');
 				document.getElementById(`twoQuartersTimeField${timerNumber}`).style.display = "block";
-				mostrarInput(2,timerNumber);
+				mostrarInput(3,timerNumber); // Mostrar campos de presión para T3 cuando se cumple T2
 				playAlarmSound(timerNumber,2);
 				// Añadimos el evento para detener el parpadeo al hacer clic
         document.getElementById(`timer${timerNumber}`).onclick = function() { stopAlarmSound(timerNumber,2); };
@@ -821,11 +1384,12 @@ function resetTimer(timerNumber) {
 				document.getElementById(`totalTimeField${timerNumber}`).innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 				document.getElementById(`totalTimeField${timerNumber}`).classList.add('reloj');
 				document.getElementById(`totalTimeField${timerNumber}`).style.display = "block";
-				mostrarInput(3,timerNumber);
+				mostrarInput(5,timerNumber); // Mostrar campos de presión de salida real cuando se cumple T3
 				playAlarmSound(timerNumber,3);
 				// Añadimos el evento para detener el parpadeo al hacer clic
         document.getElementById(`timer${timerNumber}`).onclick = function() { stopAlarmSound(timerNumber,3); };
 			}
+      saveAppState();
 		}
 
 
@@ -906,52 +1470,63 @@ function resetTimer(timerNumber) {
         }
       }
       //  Pout = Pin/2 + 25
-      const Pout = value / 2 + 25
-      // Establecer el resultado en el campo de etiqueta
+      const Pout = value / 2 + 25;
       inputElement.value = value; // Por si es mayor o menor que el permitido...
-      mostrarInput(4,id);
       document.getElementById("P4"+id).value = Pout;
       document.getElementById(`P4${id}`).disabled = true;
+      //document.getElementById(`Pout${id}`).textContent = `P.OUT: ${Pout}`;
+      document.getElementById(`Pout${id}`).textContent = `${Pout}`;
+      saveAppState();
     }
     
     // Funcion para chequear la presion de entrada. Si 
     function checkPin(id,estado) {
-      // Obtener el valor del input
       var inputElement = document.getElementById('P' + estado + id);
-      var previousElement = document.getElementById('P' + (estado-1) + id)
+      var previousElement = document.getElementById('P' + (estado-1) + id);
       var value = parseFloat(inputElement.value);
-      // Obtener los límites min y max
       var max = parseFloat(previousElement.value);
       var min = parseFloat(document.getElementById('P4' + id).value);
-      
-      stopAlarmSound(id,estado);
-      // Deshabilitar el elemento con id "anterior"
+
+      // Rellenar o validar una presión NO debe cambiar el color del cronómetro.
+      // El color solo cambia al alcanzar T/3, 2T/3 o 3T/3.
+      // Si justo hay una alarma sonando/parpadeando, la reconocemos y paramos el sonido,
+      // pero conservando el estado temporal real ya alcanzado.
+      if (alarm[id]) {
+        stopAlarmSound(id, getCurrentAlarmState(id));
+      }
       previousElement.disabled = true;
-      
-      // Verificar si el valor está fuera del rango
+
+      // Si todavía no hay P.OUT teórica o el campo está vacío, no forzamos error falso.
+      if (isNaN(value) || isNaN(min) || isNaN(max)) {
+        inputElement.classList.remove('blinking');
+        return;
+      }
+
       if (value < min || value > max) {
-        // Activar el parpadeo
         inputElement.classList.add('blinking');
         if (value < min) {
-          // Mostrar un mensaje de error o corregir el valor
           alert("El valor es menor que la Presion de Salida");
         } else if (value > max) {
-          // Mostrar un mensaje de error o corregir el valor
           alert("El valor debe ser menor que la Presion anterior");
           inputElement.value = max;
         }
       } else {
-        // Quitar el parpadeo
         inputElement.classList.remove('blinking');
       }
+      saveAppState();
     }
     
       
     // Evento beforeunload para mostrar una ventana emergente que le pregunte al usuario si está seguro de que quiere recargar la página
     window.addEventListener("beforeunload", function (e) {
+      saveAppStateNow();
       var confirmationMessage = "Estas seguro de que quieres recargar la pagina?";
       e.returnValue = confirmationMessage;     // Gecko, Trident, Chrome 34+
       return confirmationMessage;              // Gecko, WebKit, Chrome <34
+    });
+
+    window.addEventListener("pagehide", function() {
+      saveAppStateNow();
     });
     
     // Funciones para el recálculo de las alarmas perdidas en el tiempo que se haya podido perder el foco de la ventana del navegador
@@ -960,39 +1535,66 @@ function resetTimer(timerNumber) {
     if (document.visibilityState === "visible") {
         // La pestaña ha recuperado el foco
         checkMissedAlarms();
+      } else {
+        saveAppStateNow();
       }
     });
 
     
     function checkMissedAlarms() {
     const currentTime = Date.now();
-  
+
     timer.forEach((isRunning, timerNumber) => {
-        if (isRunning !== 0) { // Si el cronómetro está activo
-            const elapsedTimeNow = Math.floor((currentTime - startTime[timerNumber]) / 1000);
-            
-            // Comprueba si se han pasado alarmas intermedias y, si es así, actívalas
-            if (elapsedTimeNow >= Math.round(alarmTime / 3) && elapsedTime[timerNumber] < Math.round(alarmTime / 3)) {
-                requestPressureInput(timerNumber, 1);
-                playAlarmSound(timerNumber, 1);
-            }
-            if (elapsedTimeNow >= Math.round(alarmTime * 2 / 3) && elapsedTime[timerNumber] < Math.round(alarmTime * 2 / 3)) {
-                requestPressureInput(timerNumber, 2);
-                playAlarmSound(timerNumber, 2);
-            }
-            if (elapsedTimeNow >= alarmTime && elapsedTime[timerNumber] < alarmTime) {
-                requestPressureInput(timerNumber, 3);
-                playAlarmSound(timerNumber, 3);
-            }
+        if (timerNumber === 0 || isRunning === 0) { return; }
+
+        const elapsedTimeNow = Math.floor((currentTime - startTime[timerNumber]) / 1000);
+        const previousElapsed = elapsedTime[timerNumber] || 0;
+
+        // Si la pestaña estuvo en segundo plano, aplicamos solo la alarma más alta alcanzada.
+        // Respetamos la lógica nueva: los campos de presión se muestran anticipados.
+        if (elapsedTimeNow >= alarmTime && previousElapsed < alarmTime) {
+            requestPressureInput(timerNumber, 3);
+            playAlarmSound(timerNumber, 3);
+        } else if (elapsedTimeNow >= Math.round(alarmTime * 2 / 3) && previousElapsed < Math.round(alarmTime * 2 / 3)) {
+            requestPressureInput(timerNumber, 2);
+            playAlarmSound(timerNumber, 2);
+        } else if (elapsedTimeNow >= Math.round(alarmTime / 3) && previousElapsed < Math.round(alarmTime / 3)) {
+            requestPressureInput(timerNumber, 1);
+            playAlarmSound(timerNumber, 1);
         }
     });
   }
 
     
   function requestPressureInput(timerNumber, estado) {
-  mostrarInput(estado, timerNumber);
-  // alert(`El cronómetro ${timerNumber} ha alcanzado la alarma de ${estado * 1/3} del tiempo total. Introduzca el valor de presión correspondiente.`);
-  }    
+  // Campos anticipados:
+  // T0/inicio -> P1; alarma T1 -> P2; alarma T2 -> P3; alarma T3 -> P5 real.
+  if (estado === 1) {
+    mostrarInput(2, timerNumber);
+    const f = document.getElementById(`oneQuartersTimeField${timerNumber}`);
+    if (f && !f.innerHTML) {
+      f.innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      f.classList.add('reloj');
+      f.style.display = "block";
+    }
+  } else if (estado === 2) {
+    mostrarInput(3, timerNumber);
+    const f = document.getElementById(`twoQuartersTimeField${timerNumber}`);
+    if (f && !f.innerHTML) {
+      f.innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      f.classList.add('reloj');
+      f.style.display = "block";
+    }
+  } else if (estado === 3) {
+    mostrarInput(5, timerNumber);
+    const f = document.getElementById(`totalTimeField${timerNumber}`);
+    if (f && !f.innerHTML) {
+      f.innerHTML = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      f.classList.add('reloj');
+      f.style.display = "block";
+    }
+  }
+}    
     
   // código para forzar que esté en horizontal la pantalla
 function checkOrientation() {
@@ -1005,8 +1607,54 @@ function checkOrientation() {
   }
 }
 
+// Código para resetear la app y cambiar el tiempo de cronos
+function hardResetApp() {
+
+    if (!confirm("¿Borrar completamente la intervención actual?")) {
+        return;
+    }
+
+    try {
+        localStorage.removeItem(STORAGE_KEY);
+    } catch(e) {}
+	
+	  window.location.reload();
+
+/*
+
+    // Reset de los tres equipos
+    resetTimer(1);
+    resetTimer(2);
+    resetTimer(3);
+
+    // Restaurar configuración inicial
+    dropdownPicker.disabled = false;
+    countingSelect.disabled = false;
+
+    dropdownPicker.value = "20";
+    countingSelect.value = "Down";
+
+    alarmTime = 20 * 60;
+    countingDown = true;
+    timeNotSetted = true;
+
+    document.getElementById("T0_TXT").innerHTML = "";
+    document.getElementById("T1_TXT").innerHTML = "";
+    document.getElementById("T2_TXT").innerHTML = "";
+    document.getElementById("T3_TXT").innerHTML = "";
+
+    document.getElementById("columna-picker").style.backgroundColor = "beige";
+    document.getElementById("columna-CuentaUpDown").style.backgroundColor = "beige";
+
+    saveAppStateNow(); */
+}
+
 window.addEventListener("resize", checkOrientation);
 window.addEventListener("load", checkOrientation);
+window.addEventListener("load", function() {
+  restoreAppState();
+  bindAutosaveEvents();
+});
 
   
   </script> 
@@ -1015,4 +1663,4 @@ window.addEventListener("load", checkOrientation);
 
 
 
-  
+</html>
