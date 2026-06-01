@@ -370,11 +370,18 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
   .container-fluid > .row:nth-child(2) .mt-3 {
     margin-top: clamp(0.25rem, 0.9vh, 0.7rem) !important;
   }
-  
+
+
+  /* ---------- Botón de reinicio total ---------- */
   #btnResetTotal {
-    height: 7vh !important;
-    min-height: 60px !important;
-    line-height: 1.1;
+    width: 100% !important;
+    min-height: clamp(3.2rem, 9vh, 5.2rem) !important;
+    height: clamp(3.2rem, 9vh, 5.2rem) !important;
+    padding: 0.15rem 0.25rem !important;
+    font-size: clamp(0.8rem, 2.1vmin, 1.45rem) !important;
+    line-height: 1.05 !important;
+    white-space: normal !important;
+    text-align: center;
   }
 
   /* ---------- Inputs de texto ---------- */
@@ -587,20 +594,21 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
     </div>
     <!-- Fila de los cronómetros -->
     <div class="row  py-2" style="background-color: lightgrey;">
-      <!-- Columna vacía de separación -->
-			<div class="col-1">
-				<button
-					id="btnResetTotal"
-					class="btn btn-warning btn-crono w-100"
-					onclick="hardResetApp()">
-					RESET<br>TOTAL
-				</button>
-			</div>
+      <!-- Botón de reinicio total -->
+			<div class="col-1 divconfig etiqueta_pq2" id="columna-reset-total">
+        <button
+          id="btnResetTotal"
+          class="btn btn-warning btn-crono"
+          type="button"
+          onclick="hardResetApp()">
+          RESET<br>TOTAL
+        </button>
+      </div>
       <!-- Columna del picker-select -->
 			<div class="col-1 divconfig etiqueta_pq2" id="columna-picker">
         <!-- Widget Dropdown Picker -->
         <label for="dropdown-picker">T.Alarma (minutos)</label>
-        <select id="dropdown-picker" class="custom-select">
+        <select id="dropdown-picker" class="custom-select" autocomplete="off">
           <option value="1">1</option>
           <option value="2">2</option>
           <option value="5">5</option>
@@ -626,7 +634,7 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
       <div class="col-1 divconfig etiqueta_pq2" id="columna-CuentaUpDown">
         <!-- Widget Dropdown Picker -->
         <label for="CuentaUpDown">Cuenta (Up/Down)</label>
-        <select id="CuentaUpDown" class="custom-select w-100">
+        <select id="CuentaUpDown" class="custom-select w-100" autocomplete="off">
           <option value="Up">&uArr;</option>
           <option value="Down" selected>&dArr;</option>
 
@@ -922,6 +930,7 @@ function stopAlarmSound(timerNumber,estado) {
     alarmTime = dropdownPicker.value;
 		// Convertimos el tiempo de la alarma a segundos
 		alarmTime *= 60;
+    saveAppState();
   });
 
   // Asignamos un manejador de evento "change" al elemento "select"
@@ -953,7 +962,9 @@ function stopAlarmSound(timerNumber,estado) {
   // la app y recuperar cronómetros, presiones, textos y estilos.
   // ============================================================
   const STORAGE_KEY = "COTIN_estado_v1";
+  const RESET_FLAG_KEY = "COTIN_reset_total_en_curso";
   var restoringState = false;
+  var suppressPersistence = false;
 
   function getElementState(id) {
     const el = document.getElementById(id);
@@ -1027,7 +1038,7 @@ function stopAlarmSound(timerNumber,estado) {
   }
 
   function saveAppStateNow() {
-    if (restoringState) { return; }
+    if (restoringState || suppressPersistence) { return; }
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(buildAppState()));
     } catch (e) {
@@ -1036,7 +1047,7 @@ function stopAlarmSound(timerNumber,estado) {
   }
 
   function saveAppState() {
-    if (restoringState) { return; }
+    if (restoringState || suppressPersistence) { return; }
 
     // localStorage es síncrono: agrupamos escrituras para no grabar varias
     // veces seguidas cuando hay cronómetros activos o se teclean presiones.
@@ -1076,7 +1087,159 @@ function stopAlarmSound(timerNumber,estado) {
     }
   }
 
+  function clearStoredAppState() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+
+  function setInitialConfigControls() {
+    alarmTime = 20 * 60;
+    countingDown = true;
+    timeNotSetted = true;
+
+    dropdownPicker.value = "20";
+    countingSelect.value = "Down";
+    dropdownPicker.disabled = false;
+    countingSelect.disabled = false;
+
+    document.getElementById("columna-picker").style.backgroundColor = "";
+    document.getElementById("columna-CuentaUpDown").style.backgroundColor = "";
+  }
+
+  function resetTeamSilently(timerNumber) {
+    clearInterval(timer[timerNumber]);
+    timer[timerNumber] = 0;
+    elapsedTime[timerNumber] = 0;
+    startTime[timerNumber] = 0;
+    pausedTime[timerNumber] = 0;
+    acknowledgedAlarmState[timerNumber] = 0;
+
+    stopAllAlarmSounds(timerNumber);
+    clearTimerAlarmVisual(timerNumber);
+
+    const timerElement = document.getElementById(`timer${timerNumber}`);
+    if (timerElement) { timerElement.innerHTML = "00:00:00"; }
+
+    const startButton = document.getElementById(`StartBtn${timerNumber}`);
+    if (startButton) {
+      startButton.disabled = false;
+      startButton.onclick = function() { startTimer(timerNumber); };
+    }
+
+    const stopButton = document.getElementById(`StopBtn${timerNumber}`);
+    if (stopButton) {
+      stopButton.textContent = "STOP";
+      stopButton.classList.remove("btn-warning");
+      stopButton.classList.add("btn-danger");
+      stopButton.onclick = null;
+    }
+
+    [0,1,2,3,4,5].forEach(estado => {
+      const el = document.getElementById(`P${estado}${timerNumber}`);
+      if (!el) { return; }
+      el.value = "";
+      el.disabled = false;
+      el.classList.remove("blinking");
+    });
+
+    const p4 = document.getElementById(`P4${timerNumber}`);
+    if (p4) { p4.disabled = true; }
+
+    [1,2,3,5].forEach(estado => {
+      const el = document.getElementById(`P${estado}${timerNumber}`);
+      if (el) { el.style.display = "none"; }
+    });
+
+    const pout = document.getElementById(`Pout${timerNumber}`);
+    if (pout) { pout.textContent = ""; }
+
+    [
+      `initTimeField${timerNumber}`,
+      `oneQuartersTimeField${timerNumber}`,
+      `twoQuartersTimeField${timerNumber}`,
+      `totalTimeField${timerNumber}`
+    ].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) { return; }
+      el.innerHTML = "";
+      el.classList.remove("reloj");
+      el.style.display = "none";
+    });
+  }
+
+  function resetAppToCleanInitialState() {
+    suppressPersistence = true;
+    if (pendingSaveTimeout) {
+      clearTimeout(pendingSaveTimeout);
+      pendingSaveTimeout = null;
+    }
+
+    setInitialConfigControls();
+
+    ["T0_TXT", "T1_TXT", "T2_TXT", "T3_TXT", "TF_TXT"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.innerHTML = ""; }
+    });
+
+    ["Equipo1", "Equipo2", "Equipo3", "Asignacion1", "Asignacion2", "Asignacion3"].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.value = ""; el.disabled = false; el.classList.remove("blinking"); }
+    });
+
+    for (let i = 1; i <= 3; i++) {
+      resetTeamSilently(i);
+    }
+  }
+
+  function shouldStartClean() {
+    const params = new URLSearchParams(window.location.search);
+    let resetFlag = false;
+    try { resetFlag = sessionStorage.getItem(RESET_FLAG_KEY) === "1"; } catch(e) {}
+    return resetFlag || params.has("reset");
+  }
+
+  function consumeCleanStartFlag() {
+    try { sessionStorage.removeItem(RESET_FLAG_KEY); } catch(e) {}
+    if (window.location.search.includes("reset")) {
+      try {
+        const cleanUrl = window.location.origin === "null"
+          ? window.location.pathname
+          : window.location.origin + window.location.pathname;
+        history.replaceState(null, document.title, cleanUrl);
+      } catch(e) {}
+    }
+  }
+
+  function hardResetApp() {
+    const ok = confirm("¿Borrar completamente la intervención actual y empezar un escenario nuevo?");
+    if (!ok) { return; }
+
+    suppressPersistence = true;
+    if (pendingSaveTimeout) {
+      clearTimeout(pendingSaveTimeout);
+      pendingSaveTimeout = null;
+    }
+
+    clearStoredAppState();
+    try { sessionStorage.setItem(RESET_FLAG_KEY, "1"); } catch(e) {}
+
+    // Reinicio visual inmediato por si el navegador no recarga al instante.
+    resetAppToCleanInitialState();
+
+    // Recarga con parámetro anti-caché. En la carga nueva, restoreAppState()
+    // detectará el reset y NO restaurará ningún estado antiguo.
+    const base = window.location.href.split("?")[0].split("#")[0];
+    window.location.replace(base + "?reset=" + Date.now());
+  }
+
   function restoreAppState() {
+    if (shouldStartClean()) {
+      clearStoredAppState();
+      resetAppToCleanInitialState();
+      consumeCleanStartFlag();
+      suppressPersistence = false;
+      return;
+    }
+
     let rawState;
     try {
       rawState = localStorage.getItem(STORAGE_KEY);
@@ -1084,7 +1247,11 @@ function stopAlarmSound(timerNumber,estado) {
       console.warn("No se ha podido leer el estado local de COTIN", e);
       return;
     }
-    if (!rawState) { return; }
+    if (!rawState) {
+      setInitialConfigControls();
+      suppressPersistence = false;
+      return;
+    }
 
     let state;
     try {
@@ -1607,53 +1774,22 @@ function checkOrientation() {
   }
 }
 
-// Código para resetear la app y cambiar el tiempo de cronos
-function hardResetApp() {
-
-    if (!confirm("¿Borrar completamente la intervención actual?")) {
-        return;
-    }
-
-    try {
-        localStorage.removeItem(STORAGE_KEY);
-    } catch(e) {}
-	
-	  window.location.reload();
-
-/*
-
-    // Reset de los tres equipos
-    resetTimer(1);
-    resetTimer(2);
-    resetTimer(3);
-
-    // Restaurar configuración inicial
-    dropdownPicker.disabled = false;
-    countingSelect.disabled = false;
-
-    dropdownPicker.value = "20";
-    countingSelect.value = "Down";
-
-    alarmTime = 20 * 60;
-    countingDown = true;
-    timeNotSetted = true;
-
-    document.getElementById("T0_TXT").innerHTML = "";
-    document.getElementById("T1_TXT").innerHTML = "";
-    document.getElementById("T2_TXT").innerHTML = "";
-    document.getElementById("T3_TXT").innerHTML = "";
-
-    document.getElementById("columna-picker").style.backgroundColor = "beige";
-    document.getElementById("columna-CuentaUpDown").style.backgroundColor = "beige";
-
-    saveAppStateNow(); */
-}
-
 window.addEventListener("resize", checkOrientation);
 window.addEventListener("load", checkOrientation);
 window.addEventListener("load", function() {
   restoreAppState();
   bindAutosaveEvents();
+});
+
+// Algunos navegadores restauran dinámicamente estados de formulario/disabled
+// desde la caché de página. Tras pageshow, si no hay intervención guardada,
+// forzamos que los selectores vuelvan a estar disponibles.
+window.addEventListener("pageshow", function() {
+  try {
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      setInitialConfigControls();
+    }
+  } catch(e) {}
 });
 
   
