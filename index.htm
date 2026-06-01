@@ -432,6 +432,28 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
     height: var(--pressure-h) !important;
   }
 
+  /* Forzar tamaño del placeholder para inputs de presión (consistencia entre navegadores) */
+  input.inputpresion,
+  input.inputpresionoff,
+  input.inputpresionoff3,
+  #P51, #P52, #P53 {
+    font-size: var(--fs-pressure) !important;
+  }
+
+  input.inputpresion::placeholder,
+  input.inputpresionoff::placeholder,
+  input.inputpresionoff3::placeholder,
+  #P51::placeholder, #P52::placeholder, #P53::placeholder {
+    font-size: var(--fs-pressure) !important;
+    opacity: 0.65;
+  }
+
+  /* Prefijos para compatibilidad */
+  input::-webkit-input-placeholder { font-size: var(--fs-pressure) !important; }
+  input::-moz-placeholder { font-size: var(--fs-pressure) !important; }
+  input:-ms-input-placeholder { font-size: var(--fs-pressure) !important; }
+  input::-ms-input-placeholder { font-size: var(--fs-pressure) !important; }
+
   .pout-display {
     display: inline-flex;
     justify-content: flex-start;
@@ -462,6 +484,26 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
     font-size: 1.05em;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  /* Mostrar siempre la etiqueta indicativa dentro de TF_TXT */
+  #TF_TXT {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    padding-left: 0.2rem;
+    font-family: 'Orbitron', sans-serif;
+    font-size: calc(var(--fs-pressure) * 0.90);
+    font-weight: 700;
+  }
+
+  /* estilos específicos para el texto explicativo dentro de TF_TXT */
+  #TF_TXT .pout-label {
+    color: gray;
+    font-size: inherit;
+    font-weight: 700;
+    opacity: 1;
   }
 
   /* ---------- Columnas internas antiguas ---------- */
@@ -798,7 +840,7 @@ Basado en otro material GNU y en sonidos disponibles en internet sin ánimo de l
         <div id="TF_MRK">P.OUT</div>
       </div>
       <div class="col-2 etiqueta_tiempo">
-        <div id="TF_TXT"></div>
+        <div id="TF_TXT"><span class="pout-label" style="color:gray; font-size:0.78em;">(P.IN/2+25)</span></div>
       </div>
       <div class="col-3">
         <div class="left-div pout-display">
@@ -1169,6 +1211,12 @@ function stopAlarmSound(timerNumber,estado) {
     });
   }
 
+  function restoreTFLabel() {
+    const tf = document.getElementById('TF_TXT');
+    if (!tf) { return; }
+    tf.innerHTML = '<span class="pout-label" style="color:gray; font-size:0.78em;">(P.IN/2+25)</span>';
+  }
+
   function resetAppToCleanInitialState() {
     suppressPersistence = true;
     if (pendingSaveTimeout) {
@@ -1182,6 +1230,8 @@ function stopAlarmSound(timerNumber,estado) {
       const el = document.getElementById(id);
       if (el) { el.innerHTML = ""; }
     });
+
+    restoreTFLabel();
 
     ["Equipo1", "Equipo2", "Equipo3", "Asignacion1", "Asignacion2", "Asignacion3"].forEach(id => {
       const el = document.getElementById(id);
@@ -1821,6 +1871,7 @@ window.addEventListener("load", checkOrientation);
 window.addEventListener("load", function() {
   restoreAppState();
   bindAutosaveEvents();
+  restoreTFLabel();
 });
 
 // Algunos navegadores restauran dinámicamente estados de formulario/disabled
